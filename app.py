@@ -22,9 +22,18 @@ def load_data():
     return claims, pd.read_csv(CUSTOMER_CSV), pd.read_csv(ADDRESS_CSV)
 
 
-if not (MODEL_PKL.exists() and CLAIMS_CSV.exists()):
-    st.error("Data/model missing. Run `python -m src.generate_data` then `python -m src.model`.")
-    st.stop()
+if not CLAIMS_CSV.exists():
+    with st.spinner("Combining source datasets..."):
+        from src import combine_data
+        claims = combine_data.load_claims()
+        claims.to_csv(CLAIMS_CSV, index=False)
+        combine_data.build_customer_history(claims).to_csv(CUSTOMER_CSV, index=False)
+        combine_data.build_address_signals(claims).to_csv(ADDRESS_CSV, index=False)
+
+if not MODEL_PKL.exists():
+    with st.spinner("Training fraud model (first run only)..."):
+        from src.model import train_model
+        train_model()
 
 model_bundle = load_model()
 model = model_bundle["model"]
@@ -56,14 +65,14 @@ if page == "📊 Dashboard":
         fig = px.bar(d.sort_values("fraud_count"), x="fraud_count", y="component_requested",
                      orientation="h", color="fraud_count", color_continuous_scale="Reds")
         fig.update_layout(height=350)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     with right:
         st.subheader("Fraud by Support Channel")
         d = fraud.groupby("support_channel").size().reset_index(name="fraud_count")
         fig = px.pie(d, names="support_channel", values="fraud_count", hole=0.4,
                      color_discrete_sequence=px.colors.sequential.RdBu)
         fig.update_layout(height=350)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     left, right = st.columns(2)
     with left:
@@ -73,14 +82,14 @@ if page == "📊 Dashboard":
         daily["type"] = daily["is_fraud"].map({0: "Legitimate", 1: "Fraudulent"})
         fig = px.line(daily, x="date", y="count", color="type", color_discrete_map=COLORS)
         fig.update_layout(height=350)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     with right:
         st.subheader("Top Suspicious Addresses")
         top = address_signals.nlargest(10, "address_fraud_rate")
         fig = px.bar(top, x="shipping_address_id", y="address_fraud_rate",
                      color="total_claims_at_address", color_continuous_scale="OrRd")
         fig.update_layout(height=350)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     st.markdown("---")
     st.subheader("🚨 Recent High-Risk Claims")
@@ -88,7 +97,7 @@ if page == "📊 Dashboard":
         fraud.sort_values("claim_date", ascending=False).head(15)[[
             "claim_id", "claim_date", "customer_id", "component_requested",
             "component_value_usd", "claim_description", "diagnostic_result"]],
-        use_container_width=True, height=400)
+        width="stretch", height=400)
 
 # ---------------- CLAIM ANALYZER ----------------
 elif page == "🔍 Claim Analyzer":
@@ -111,7 +120,7 @@ elif page == "🔍 Claim Analyzer":
             unique_addresses = st.slider("Unique Addresses Used", 1, 5, 1)
             component_value = st.number_input("Component Value ($)", 20, 1000, 200)
         description = st.text_area("Claim Description", placeholder="Describe the issue with the device...", height=100)
-        submitted = st.form_submit_button("🔍 Analyze Claim", use_container_width=True)
+        submitted = st.form_submit_button("🔍 Analyze Claim", width="stretch")
 
     if submitted:
         st.markdown("---")
@@ -164,7 +173,7 @@ elif page == "🔍 Claim Analyzer":
                                  {"range": [40, 70], "color": "#FFF3E0"},
                                  {"range": [70, 100], "color": "#FFEBEE"}]}))
             fig.update_layout(height=300)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
         with col_detail:
             st.markdown(f"### Assessment: {risk_level}")
@@ -204,7 +213,7 @@ else:
     fig = px.bar(imp.sort_values("Importance").tail(15), x="Importance", y="Feature",
                  orientation="h", color="Importance", color_continuous_scale="Blues")
     fig.update_layout(height=500)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     st.markdown("---")
     st.subheader("🔎 Key Fraud Patterns Detected")
@@ -215,9 +224,9 @@ else:
         fig = px.histogram(claims, x="device_age_days", color=label, nbins=30, barmode="overlay",
                            color_discrete_map=COLORS, opacity=0.7)
         fig.update_layout(height=350)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     with right:
         st.markdown("#### Component Value Distribution")
         fig = px.box(claims, x=label, y="component_value_usd", color=label, color_discrete_map=COLORS)
         fig.update_layout(height=350, showlegend=False)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")

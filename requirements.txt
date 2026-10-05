@@ -1,6 +1,6 @@
-pandas
-numpy
-scikit-learn
-faker
-streamlit
-plotly
+pandas>=2.2
+numpy>=1.26
+scikit-learn>=1.5
+faker>=25.0
+streamlit>=1.50
+plotly>=5.20

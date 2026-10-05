@@ -8,7 +8,8 @@ warranty-fraud-shield/
   models/              Trained model (fraud_model.pkl)
   src/
     config.py          Shared paths
-    generate_data.py   Synthetic data generator
+    combine_data.py    Merges the two source datasets into data/combined_*.csv
+    generate_data.py   Synthetic data generator (optional; writes to data/combined_*.csv)
     model.py           Model training
 ```
 
@@ -16,7 +17,7 @@ warranty-fraud-shield/
 
 ```
 pip install -r requirements.txt
-python -m src.generate_data
+python -m src.combine_data
 python -m src.model
 streamlit run app.py
 ```
