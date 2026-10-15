@@ -4,3 +4,5 @@ scikit-learn>=1.5
 faker>=25.0
 streamlit>=1.50
 plotly>=5.20
+requests>=2.31
+truststore>=0.10

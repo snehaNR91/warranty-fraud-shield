@@ -1,6 +1,10 @@
 # reason_engine.py
 
-REJECTION_REASONS = {
+"""Catalogue of the 12 coded rejection reasons (code, category, severity, finding template, action)."""
+
+from typing import Any
+
+REJECTION_REASONS: dict[str, dict[str, Any]] = {
     # --- Claim Velocity ---
     "HIGH_CLAIM_FREQUENCY_30D": {
         "code": "RF-001",
@@ -13,8 +17,7 @@ REJECTION_REASONS = {
             "Average for this product line is {avg} claims per year."
         ),
         "recommendation": (
-            "Hold shipment. Request customer to provide "
-            "proof of defect via photo/video before proceeding."
+            "Hold shipment. Request customer to provide " "proof of defect via photo/video before proceeding."
         ),
     },
     "HIGH_CLAIM_FREQUENCY_90D": {
@@ -26,12 +29,8 @@ REJECTION_REASONS = {
             "Customer has filed {count} claims in the last 90 days. "
             "This is {multiplier}x higher than the average customer."
         ),
-        "recommendation": (
-            "Proceed with additional verification. "
-            "Request diagnostics report before shipping part."
-        ),
+        "recommendation": ("Proceed with additional verification. " "Request diagnostics report before shipping part."),
     },
-
     # --- Diagnostic Mismatch ---
     "DIAGNOSTICS_NOT_RUN": {
         "code": "RF-003",
@@ -44,8 +43,7 @@ REJECTION_REASONS = {
             "without running standard diagnostics."
         ),
         "recommendation": (
-            "Request customer to run Dell SupportAssist diagnostics "
-            "and share the validation code before approving."
+            "Request customer to run Dell SupportAssist diagnostics " "and share the validation code before approving."
         ),
     },
     "DIAGNOSTICS_PASSED_BUT_CLAIMING": {
@@ -58,12 +56,8 @@ REJECTION_REASONS = {
             "but customer is requesting replacement of {component}. "
             "No hardware fault detected by automated tests."
         ),
-        "recommendation": (
-            "Escalate to Level 2 support for manual remote diagnosis "
-            "before approving replacement."
-        ),
+        "recommendation": ("Escalate to Level 2 support for manual remote diagnosis " "before approving replacement."),
     },
-
     # --- High Value Targeting ---
     "HIGH_VALUE_COMPONENT_PATTERN": {
         "code": "RF-005",
@@ -76,8 +70,7 @@ REJECTION_REASONS = {
             "valued at ${value}."
         ),
         "recommendation": (
-            "Require return of defective part BEFORE shipping "
-            "replacement (advance exchange suspension)."
+            "Require return of defective part BEFORE shipping " "replacement (advance exchange suspension)."
         ),
     },
     "COMPONENT_VALUE_EXCEEDS_DEVICE": {
@@ -89,12 +82,8 @@ REJECTION_REASONS = {
             "Requested {component} (${value}) represents a significant "
             "portion of device value for a {age}-day-old {product}."
         ),
-        "recommendation": (
-            "Verify warranty entitlement and consider "
-            "whole-unit replacement evaluation."
-        ),
+        "recommendation": ("Verify warranty entitlement and consider " "whole-unit replacement evaluation."),
     },
-
     # --- Address / Identity Anomalies ---
     "MULTIPLE_CUSTOMERS_SAME_ADDRESS": {
         "code": "RF-007",
@@ -106,10 +95,7 @@ REJECTION_REASONS = {
             "warranty parts to address {address_id}. "
             "Total claims at this address: {total_claims}."
         ),
-        "recommendation": (
-            "Flag address for fraud ring investigation. "
-            "Hold all pending shipments to this address."
-        ),
+        "recommendation": ("Flag address for fraud ring investigation. " "Hold all pending shipments to this address."),
     },
     "MULTIPLE_ADDRESSES_SINGLE_CUSTOMER": {
         "code": "RF-008",
@@ -120,12 +106,8 @@ REJECTION_REASONS = {
             "Customer {customer_id} has used {num_addresses} different "
             "shipping addresses across {total_claims} claims."
         ),
-        "recommendation": (
-            "Verify customer identity. Request government-issued "
-            "ID or original purchase invoice."
-        ),
+        "recommendation": ("Verify customer identity. Request government-issued " "ID or original purchase invoice."),
     },
-
     # --- Description Anomalies ---
     "TEMPLATED_DESCRIPTION": {
         "code": "RF-009",
@@ -137,10 +119,7 @@ REJECTION_REASONS = {
             "with {match_count} other flagged claims. "
             "Suspected copy-paste or scripted submission."
         ),
-        "recommendation": (
-            "Require a live video call with customer to "
-            "visually verify the reported defect."
-        ),
+        "recommendation": ("Require a live video call with customer to " "visually verify the reported defect."),
     },
     "VAGUE_DESCRIPTION": {
         "code": "RF-010",
@@ -153,11 +132,9 @@ REJECTION_REASONS = {
             "failures typically include error codes or specific symptoms."
         ),
         "recommendation": (
-            "Ask customer to provide specific error codes, "
-            "screenshots, or diagnostic validation codes."
+            "Ask customer to provide specific error codes, " "screenshots, or diagnostic validation codes."
         ),
     },
-
     # --- Device Age Anomaly ---
     "NEW_DEVICE_HIGH_VALUE_CLAIM": {
         "code": "RF-011",
@@ -170,8 +147,7 @@ REJECTION_REASONS = {
             "expected failure rate for this batch)."
         ),
         "recommendation": (
-            "Offer depot repair instead of part dispatch. "
-            "Request the unit be sent in for inspection."
+            "Offer depot repair instead of part dispatch. " "Request the unit be sent in for inspection."
         ),
     },
     "EXPIRED_WARRANTY_ATTEMPT": {
@@ -184,9 +160,6 @@ REJECTION_REASONS = {
             "{days_expired} days ago or expires within {days_left} days. "
             "Possible rush claim before coverage ends."
         ),
-        "recommendation": (
-            "Strictly verify entitlement. Do not override "
-            "warranty dates without manager approval."
-        ),
+        "recommendation": ("Strictly verify entitlement. Do not override " "warranty dates without manager approval."),
     },
 }

@@ -1,12 +1,25 @@
 # reason_generator.py
 
+"""Rule engine: evaluates a claim against the 12 coded rejection rules defined in ``src.reason_engine``."""
+
+from collections.abc import Mapping
+from typing import Any
+
 from src.reason_engine import REJECTION_REASONS
 
 
-def generate_rejection_reasons(claim_data, customer_data, address_data):
-    """
-    Analyzes a claim against all fraud rules and returns
-    applicable rejection reasons ranked by severity.
+def generate_rejection_reasons(
+    claim_data: Mapping[str, Any], customer_data: Mapping[str, Any], address_data: Mapping[str, Any]
+) -> list[dict[str, Any]]:
+    """Analyze a claim against all fraud rules and return applicable rejection reasons ranked by severity.
+
+    Args:
+        claim_data: Claim fields (service tag, component, value, device age, diagnostics, description, ...).
+        customer_data: Customer history (claim counts, addresses used, share of high-value claims).
+        address_data: Shipping-address signals (customers and claims at the address).
+
+    Returns:
+        Triggered reasons (code, category, severity, title, detail, recommendation), HIGH severity first.
     """
     triggered_reasons = []
 
@@ -59,10 +72,7 @@ def generate_rejection_reasons(claim_data, customer_data, address_data):
         triggered_reasons.append(reason)
 
     # --- Rule 6: Component value vs device age ---
-    if (
-        claim_data.get("component_value_usd", 0) > 300
-        and claim_data.get("device_age_days", 999) < 90
-    ):
+    if claim_data.get("component_value_usd", 0) > 300 and claim_data.get("device_age_days", 999) < 90:
         reason = REJECTION_REASONS["COMPONENT_VALUE_EXCEEDS_DEVICE"].copy()
         reason["detail"] = reason["template"].format(
             component=claim_data.get("component_requested", "N/A"),
@@ -96,9 +106,7 @@ def generate_rejection_reasons(claim_data, customer_data, address_data):
     if claim_data.get("description_similarity_score", 0) > 0.8:
         reason = REJECTION_REASONS["TEMPLATED_DESCRIPTION"].copy()
         reason["detail"] = reason["template"].format(
-            similarity=int(
-                claim_data.get("description_similarity_score", 0) * 100
-            ),
+            similarity=int(claim_data.get("description_similarity_score", 0) * 100),
             match_count=claim_data.get("duplicate_description_count", 0),
         )
         triggered_reasons.append(reason)
@@ -114,10 +122,7 @@ def generate_rejection_reasons(claim_data, customer_data, address_data):
         triggered_reasons.append(reason)
 
     # --- Rule 11: New device, high value claim ---
-    if (
-        claim_data.get("device_age_days", 999) < 60
-        and claim_data.get("component_value_usd", 0) > 300
-    ):
+    if claim_data.get("device_age_days", 999) < 60 and claim_data.get("component_value_usd", 0) > 300:
         reason = REJECTION_REASONS["NEW_DEVICE_HIGH_VALUE_CLAIM"].copy()
         reason["detail"] = reason["template"].format(
             age=claim_data.get("device_age_days", 0),
@@ -147,8 +152,6 @@ def generate_rejection_reasons(claim_data, customer_data, address_data):
 
     # Sort by severity
     severity_order = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
-    triggered_reasons.sort(
-        key=lambda x: severity_order.get(x["severity"], 3)
-    )
+    triggered_reasons.sort(key=lambda x: severity_order.get(x["severity"], 3))
 
     return triggered_reasons

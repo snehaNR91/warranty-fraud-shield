@@ -1,0 +1,44 @@
+[project]
+name = "warranty-fraud-shield"
+version = "1.0.0"
+description = "AI Shield - warranty / RMA fraud detection with explainable reasons and an LLM investigation agent"
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["src/app.py"]  # legacy duplicate of app.py, kept for reference only
+
+[tool.ruff.lint]
+select = [
+    "E", "W",   # pycodestyle (PEP 8)
+    "F",        # pyflakes
+    "I",        # isort import ordering
+    "N",        # pep8-naming
+    "D",        # pydocstyle (PEP 257)
+    "ANN",      # type annotations
+    "B",        # bugbear (likely bugs)
+    "BLE",      # no blind `except Exception` without justification
+    "S",        # bandit (security)
+    "UP",       # pyupgrade
+    "SIM",      # simplifications
+    "C4",       # comprehensions
+    "RUF",      # ruff-specific
+]
+ignore = [
+    "ANN101", "ANN102",  # self / cls annotations
+    "D105", "D107",      # magic methods / __init__ docstrings
+    "RUF001",            # emoji / unicode in UI strings is intentional
+]
+
+[tool.ruff.lint.per-file-ignores]
+"app.py" = ["D103", "ANN"]           # Streamlit page script: nested UI callbacks
+"tests/*" = ["S101", "D", "ANN"]     # pytest uses assert; tests are self-describing
+"src/generate_data.py" = ["S311"]    # seeded pseudo-random synthetic data, not used for security
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

@@ -1,3 +1,6 @@
+"""Generate synthetic warranty claims (with injected fraud patterns) plus customer and address tables."""
+
+import logging
 import random
 from datetime import datetime, timedelta
 
@@ -6,6 +9,8 @@ import pandas as pd
 from faker import Faker
 
 from src.config import ADDRESS_CSV, CLAIMS_CSV, CUSTOMER_CSV, DATA_DIR
+
+logger = logging.getLogger(__name__)
 
 fake = Faker()
 Faker.seed(42)
@@ -16,9 +21,14 @@ NUM_CLAIMS = 5000
 FRAUD_RATE = 0.08
 
 PRODUCT_LINES = [
-    "Latitude 5540", "Latitude 7440", "Precision 5680",
-    "OptiPlex 7010", "XPS 15 9530", "Inspiron 16 5630",
-    "PowerEdge R760", "Vostro 3420",
+    "Latitude 5540",
+    "Latitude 7440",
+    "Precision 5680",
+    "OptiPlex 7010",
+    "XPS 15 9530",
+    "Inspiron 16 5630",
+    "PowerEdge R760",
+    "Vostro 3420",
 ]
 
 COMPONENTS = {
@@ -54,7 +64,8 @@ LEGIT_DESCRIPTIONS = [
 ]
 
 
-def generate_claims(n):
+def generate_claims(n: int) -> pd.DataFrame:
+    """Generate ``n`` claims; about ``FRAUD_RATE`` of them follow ring-style fraud patterns."""
     records = []
     customer_pool = [f"CUST-{random.randint(10000, 99999)}" for _ in range(int(n * 0.7))]
     address_pool = [f"ADDR-{random.randint(1000, 9999)}" for _ in range(int(n * 0.5))]
@@ -84,69 +95,78 @@ def generate_claims(n):
         comp_min, comp_max = COMPONENTS[component]
         purchase_date = datetime.now() - timedelta(days=device_age)
 
-        records.append({
-            "claim_id": f"CLM-2024-{str(i + 1).zfill(5)}",
-            "claim_date": fake.date_time_between(start_date="-90d", end_date="now"),
-            "service_tag": fake.bothify(text="???#??#").upper(),
-            "customer_id": customer_id,
-            "customer_name": fake.name(),
-            "email_domain": random.choice(["gmail.com", "yahoo.com", "outlook.com", "company.com"]),
-            "shipping_address_id": address_id,
-            "shipping_state": fake.state_abbr(),
-            "shipping_zip": fake.zipcode(),
-            "product_line": random.choice(PRODUCT_LINES),
-            "device_purchase_date": purchase_date.date(),
-            "warranty_end_date": (purchase_date + timedelta(days=1095)).date(),
-            "device_age_days": device_age,
-            "component_requested": component,
-            "component_value_usd": round(random.uniform(comp_min, comp_max), 2),
-            "claim_description": description,
-            "diagnostic_run": diagnostic_run,
-            "diagnostic_result": diagnostic_result,
-            "support_channel": channel,
-            "agent_id": f"AGT-{random.randint(1000, 1200)}",
-            "claim_status": "Pending",
-            "is_fraud": is_fraud,
-        })
+        records.append(
+            {
+                "claim_id": f"CLM-2024-{str(i + 1).zfill(5)}",
+                "claim_date": fake.date_time_between(start_date="-90d", end_date="now"),
+                "service_tag": fake.bothify(text="???#??#").upper(),
+                "customer_id": customer_id,
+                "customer_name": fake.name(),
+                "email_domain": random.choice(["gmail.com", "yahoo.com", "outlook.com", "company.com"]),
+                "shipping_address_id": address_id,
+                "shipping_state": fake.state_abbr(),
+                "shipping_zip": fake.zipcode(),
+                "product_line": random.choice(PRODUCT_LINES),
+                "device_purchase_date": purchase_date.date(),
+                "warranty_end_date": (purchase_date + timedelta(days=1095)).date(),
+                "device_age_days": device_age,
+                "component_requested": component,
+                "component_value_usd": round(random.uniform(comp_min, comp_max), 2),
+                "claim_description": description,
+                "diagnostic_run": diagnostic_run,
+                "diagnostic_result": diagnostic_result,
+                "support_channel": channel,
+                "agent_id": f"AGT-{random.randint(1000, 1200)}",
+                "claim_status": "Pending",
+                "is_fraud": is_fraud,
+            }
+        )
 
     return pd.DataFrame(records)
 
 
-def enrich_customer_history(claims_df):
+def enrich_customer_history(claims_df: pd.DataFrame) -> pd.DataFrame:
+    """Build a per-customer history table from generated claims."""
     history = []
     for cust_id, c in claims_df.groupby("customer_id"):
-        history.append({
-            "customer_id": cust_id,
-            "total_claims_lifetime": len(c),
-            "claims_last_90_days": len(c),
-            "claims_last_30_days": int((c["claim_date"] > datetime.now() - timedelta(days=30)).sum()),
-            "unique_devices_claimed": c["service_tag"].nunique(),
-            "unique_addresses_used": c["shipping_address_id"].nunique(),
-            "avg_component_value": round(c["component_value_usd"].mean(), 2),
-            "max_component_value": round(c["component_value_usd"].max(), 2),
-            "pct_high_value_claims": round((c["component_value_usd"] > 300).sum() / len(c), 2),
-            "previous_rejections": random.randint(0, 3),
-            "days_since_last_claim": random.randint(1, 180),
-            "account_age_days": random.randint(30, 1500),
-        })
+        history.append(
+            {
+                "customer_id": cust_id,
+                "total_claims_lifetime": len(c),
+                "claims_last_90_days": len(c),
+                "claims_last_30_days": int((c["claim_date"] > datetime.now() - timedelta(days=30)).sum()),
+                "unique_devices_claimed": c["service_tag"].nunique(),
+                "unique_addresses_used": c["shipping_address_id"].nunique(),
+                "avg_component_value": round(c["component_value_usd"].mean(), 2),
+                "max_component_value": round(c["component_value_usd"].max(), 2),
+                "pct_high_value_claims": round((c["component_value_usd"] > 300).sum() / len(c), 2),
+                "previous_rejections": random.randint(0, 3),
+                "days_since_last_claim": random.randint(1, 180),
+                "account_age_days": random.randint(30, 1500),
+            }
+        )
     return pd.DataFrame(history)
 
 
-def enrich_address_signals(claims_df):
+def enrich_address_signals(claims_df: pd.DataFrame) -> pd.DataFrame:
+    """Build a per-address signals table from generated claims."""
     signals = []
     for addr_id, a in claims_df.groupby("shipping_address_id"):
-        signals.append({
-            "shipping_address_id": addr_id,
-            "unique_customers_at_address": a["customer_id"].nunique(),
-            "unique_service_tags": a["service_tag"].nunique(),
-            "total_claims_at_address": len(a),
-            "is_residential": random.choice([True, True, True, False]),
-            "address_fraud_rate": round(a["is_fraud"].mean(), 2),
-        })
+        signals.append(
+            {
+                "shipping_address_id": addr_id,
+                "unique_customers_at_address": a["customer_id"].nunique(),
+                "unique_service_tags": a["service_tag"].nunique(),
+                "total_claims_at_address": len(a),
+                "is_residential": random.choice([True, True, True, False]),
+                "address_fraud_rate": round(a["is_fraud"].mean(), 2),
+            }
+        )
     return pd.DataFrame(signals)
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """Generate and write the three synthetic datasets."""
     DATA_DIR.mkdir(exist_ok=True)
     claims = generate_claims(NUM_CLAIMS)
     customer_history = enrich_customer_history(claims)
@@ -156,8 +176,16 @@ if __name__ == "__main__":
     customer_history.to_csv(CUSTOMER_CSV, index=False)
     address_signals.to_csv(ADDRESS_CSV, index=False)
 
-    print(f"Generated {len(claims)} claims")
-    print(f"  Fraud: {claims['is_fraud'].sum()}")
-    print(f"  Legit: {len(claims) - claims['is_fraud'].sum()}")
-    print(f"Customer profiles: {len(customer_history)}")
-    print(f"Address profiles:  {len(address_signals)}")
+    logger.info(
+        "Generated %d claims (fraud: %d, legit: %d)",
+        len(claims),
+        claims["is_fraud"].sum(),
+        len(claims) - claims["is_fraud"].sum(),
+    )
+    logger.info("Customer profiles: %d", len(customer_history))
+    logger.info("Address profiles:  %d", len(address_signals))
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    main()

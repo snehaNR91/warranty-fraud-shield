@@ -21,3 +21,19 @@ python -m src.combine_data
 python -m src.model
 streamlit run app.py
 ```
+
+## Investigation Agent (LLM)
+
+The "🕵️ Investigation Agent" page (`src/investigation_agent.py`) uses an LLM with tool calling to investigate a
+flagged claim and draft a recommendation for human approval. Configure it in `.streamlit/secrets.toml`
+(git-ignored) or environment variables:
+
+```
+GENAI_URL     = "https://aia.gateway.dell.com/genai/dev/v1"   # OpenAI-compatible endpoint
+GENAI_MODEL   = "gpt-oss-120b"                                # any model that supports tool calling
+TOKEN_URL     = "https://www.dell.com/di/api/v3/oauth/token"  # OAuth2 client-credentials endpoint
+CLIENT_ID     = "..."
+CLIENT_SECRET = "..."
+```
+
+The gateway is on the Dell network, so the agent only works where that network is reachable.
